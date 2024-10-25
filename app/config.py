@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from httpx import AsyncClient
 
 
 class Settings(BaseSettings):
@@ -12,6 +13,7 @@ class Settings(BaseSettings):
     # FastAPI settings
     FASTAPI_PORT: int
     FRONTEND_PORT: int
+    API_ADDRESS: str
 
     @property
     def POSTGRES_URL(self):
@@ -22,3 +24,4 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+client = AsyncClient()
