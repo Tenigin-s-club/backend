@@ -2,6 +2,6 @@ from fastapi import APIRouter
 
 
 router = APIRouter(
-    prefix='/search',
-    tags=['search']
+    prefix='/auth',
+    tags=['auth']
 )
