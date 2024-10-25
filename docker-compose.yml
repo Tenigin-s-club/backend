@@ -10,6 +10,8 @@ services:
       timeout: 1s
       retries: 60
     restart: always
+
+
   backend:
     build: .
     env_file: .env
