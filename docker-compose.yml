@@ -1,0 +1,22 @@
+services:
+  postgres:
+    image: 'postgres:16.2'
+    env_file: .env
+    ports:
+      - "54321:5432"
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER}", "-d", "${POSTGRES_DB}"]
+      interval: 1s
+      timeout: 1s
+      retries: 60
+    restart: always
+  backend:
+    build: .
+    env_file: .env
+    ports:
+      - ${FASTAPI_PORT}:${FASTAPI_PORT}
+    stop_signal: SIGINT
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: always
