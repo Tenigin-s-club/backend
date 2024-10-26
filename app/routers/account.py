@@ -22,7 +22,7 @@ async def get_info_account(
 ) -> SAccountInfo:
     
     user_id = await get_user_id_from_token(authorization.credentials, session)
-    query = select(User.fio).where(User.id == user_id)
+    query = select(User.fio, User.email).where(User.id == user_id)
     result = await session.execute(query)
     result = result.mappings().first()
     return SAccountInfo(**result)
