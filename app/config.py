@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from httpx import AsyncClient
+from redis import ConnectionPool
 
 
 class Settings(BaseSettings):
@@ -14,6 +15,10 @@ class Settings(BaseSettings):
     FASTAPI_PORT: int
     FRONTEND_PORT: int
     API_ADDRESS: str
+    
+    #Redis settings
+    REDIS_HOST: str
+    REDIS_PORT: str
 
     @property
     def POSTGRES_URL(self):
@@ -25,5 +30,9 @@ class Settings(BaseSettings):
 
 settings = Settings()
 client = AsyncClient()
+<<<<<<< HEAD
 # формат даты во внешнем API
 DATETIME_FORMAT = '%d.%m.%Y %H:%M:%S'
+=======
+redis_connection_pool = ConnectionPool(host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=0)
+>>>>>>> 4d1be42 (update auth)

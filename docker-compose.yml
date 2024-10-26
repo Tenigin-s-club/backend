@@ -1,4 +1,11 @@
 services:
+  redis:
+    image: redis:latest
+    env_file: .env
+    ports:
+      - "7963:6379"
+    restart: always
+
   postgres:
     image: 'postgres:16.2'
     env_file: .env
@@ -12,13 +19,16 @@ services:
     restart: always
 
 
-  backend:
-    build: .
-    env_file: .env
-    ports:
-      - ${FASTAPI_PORT}:${FASTAPI_PORT}
-    stop_signal: SIGINT
-    depends_on:
-      postgres:
-        condition: service_healthy
-    restart: always
+  # backend:
+  #   build: .
+  #   env_file: .env
+  #   ports:
+  #     - ${FASTAPI_PORT}:${FASTAPI_PORT}
+  #   stop_signal: SIGINT
+  #   depends_on:
+  #     redis:
+  #       condition: service_healthy
+  #     postgres:
+  #       condition: service_healthy
+  #   restart: always
+    

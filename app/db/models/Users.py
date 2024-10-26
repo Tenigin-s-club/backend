@@ -10,6 +10,7 @@ class Table_Users(Base):
     
     id: Mapped[str] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4())
     login: Mapped[str] = mapped_column(unique=True)
-    fio: Mapped[str] = mapped_column(unique=True)
+    password: Mapped[str]
+    fio: Mapped[str]
 
     
