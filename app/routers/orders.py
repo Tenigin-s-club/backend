@@ -1,14 +1,15 @@
-from fastapi import APIRouter, Depends
-from fastapi.exceptions import HTTPException
+from fastapi import APIRouter, Depends, status, HTTPException
+from fastapi.security import HTTPAuthorizationCredentials
+from httpx import Headers
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, insert
-from redis import Redis
+from sqlalchemy import insert, select
+from typing import Annotated
 
+from app.utils import security, get_user_id_from_token
 from app.db.configuration import get_session
-from app.db.models import Table_Orders
-from app.schemas.order import *
-from app.config import client, settings, redis_connection_pool
-from app.responses import *
+from app.db.models.orders import Order
+from app.schemas.orders import SOrderInfo, SOrderAdd
+from app.config import client, settings
 
 
 router = APIRouter(
@@ -17,36 +18,38 @@ router = APIRouter(
 )
 
     
-@router.get("/all/{id}")
-async def get_all_orders(id: int, session: AsyncSession = Depends(get_session)):
-    pass
+@router.get('/', status_code=status.HTTP_200_OK)
+async def get_orders(
+        authorization: Annotated[HTTPAuthorizationCredentials, Depends(security)],
+        session: AsyncSession = Depends(get_session)
+) -> list[SOrderInfo]:
+    user_id = await get_user_id_from_token(authorization.credentials, session)
+    query = select(Order.__table__.columns).filter_by(user_id=user_id)
+    result = await session.execute(query)
+    orders = result.mappings().all()
+    return [SOrderInfo(**order) for order in orders]
 
-@router.post("/new")
-async def add_new_order(order_data: AddSchema, session: AsyncSession = Depends(get_session)):
-    redis = Redis
-    body = {
-        "train_id": order_data.train_id,
-        "wagon_id": order_data.wagon_id,
-        "seat_ids": order_data.seat_ids
-    }
-    headers = {
-        "Authorization": ""
-    }
-    
-    response_data = await client.post(settings.API_ADDRESS + "/api/order", json=body)
-    
-    if response_data.status_code != 200:
-        raise HTTPException(status_code=response_data.status_code)
-    
-    response_data = response_data.json()
-    
-    await session.execute(insert(Table_Orders).values({
-        Table_Orders.id: response_data["order_id"],
-        Table_Orders.user: order_data.user_id,
-        Table_Orders.train_id: order_data.train_id,
-        Table_Orders.wagon_id: order_data.wagon_id,
-        Table_Orders.seat_ids: order_data.seat_ids
-    }))
+
+@router.post("/", status_code=status.HTTP_204_NO_CONTENT)
+async def add_new_order(
+        authorization: Annotated[HTTPAuthorizationCredentials, Depends(security)],
+        order: SOrderAdd,
+        session: AsyncSession = Depends(get_session)
+) -> None:
+    response = await client.post(
+        url=f'{settings.API_ADDRESS}/api/order',
+        json=order.model_dump(),
+        headers=Headers({'Authorization': f'Bearer {authorization.credentials}'})
+    )
+    if response.status_code != status.HTTP_200_OK:
+        raise HTTPException(status_code=response.status_code)
+    order_id = response.json()['order_id']
+
+    user_id = await get_user_id_from_token(authorization.credentials, session)
+    query = insert(Order).values(
+        id=order_id,
+        user_id=user_id,
+        **order.model_dump()
+    )
+    await session.execute(query)
     await session.commit()
-    
-    return status_200()

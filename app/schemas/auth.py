@@ -1,11 +1,13 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 
-class RegisterSchema(BaseModel):
+
+class SRegisterUser(BaseModel):
     fio: str
     email: str
     password: str
     team: str
+
     
-class LoginSchema(BaseModel):
+class SLoginUser(BaseModel):
     email: str
     password: str

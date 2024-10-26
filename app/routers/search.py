@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, Query
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import HTTPAuthorizationCredentials
 
 from app.config import client, settings, DATETIME_FORMAT
+from app.utils import security
 from app.schemas.search import STrainInfo
 from httpx import Headers
 from datetime import date, datetime
@@ -11,7 +12,6 @@ router = APIRouter(
     prefix='/search',
     tags=['search']
 )
-security = HTTPBearer()
 # уровни заполненности поезда по процентному отношению доступных мест к общему количеству
 fullness_types = {
     'LOW': (0, 29),
