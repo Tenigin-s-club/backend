@@ -7,8 +7,11 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi.exceptions import HTTPException
 from fastapi import status
+from httpx import Headers
 
 from app.db.models import User
+from app.schemas.orders import SOrderInfo
+from app.config import client
 
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -45,6 +48,27 @@ async def get_user_id_from_token(token: str, session: AsyncSession) -> UUID:
     return result
 
 
+async def new_order(
+    order: SOrderInfo,
+    token: str
+    ) -> int:
+    body = {
+        "train_id": order.train_id,
+        "wagon_id": order.wagon_id,
+        "seat_ids": order.seat_ids
+    }
+    response = await client.post(
+        url=f'{settings.API_ADDRESS}/api/order',
+        json=body,
+        headers=Headers({'Authorization': f'Bearer {token}'})
+    )
+    if response.status_code != status.HTTP_200_OK:
+        raise HTTPException(status_code=response.status_code)
+    
+    order_id = response.json()['order_id']
+    return order_id
+
+
 class Notification:
     
     @staticmethod
@@ -63,3 +87,5 @@ class Notification:
             
             session.send_message(msg)
             session.quit()
+            
+

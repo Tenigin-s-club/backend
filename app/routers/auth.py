@@ -22,7 +22,6 @@ router = APIRouter(
 @router.post('/register', status_code=status.HTTP_200_OK)
 async def register_user(user: SRegisterUser, session: AsyncSession = Depends(get_session)):
     hashed_password = get_password_hash(user.password)
-    print(hashed_password)
     response = await client.post(
         url=f'{settings.API_ADDRESS}/api/auth/register',
         json={
