@@ -6,8 +6,8 @@ from uuid import UUID
 from enum import Enum as BaseEnum
 
 class OrderStatus(BaseEnum):
-    RESERVE: str = "reserve"
-    BUY: str = "buy"
+    RESERVE: str = "RESERVE"
+    BUY: str = "BUY"
 
 class Order(Base):
     __tablename__ = "orders"

@@ -33,13 +33,11 @@ async def get_info_account(
 async def get_orders(
         authorization: Annotated[HTTPAuthorizationCredentials, Depends(security)],
         session: AsyncSession = Depends(get_session)
-) -> list[SAccountOrders]:
-    
+):
     user_id = await get_user_id_from_token(authorization.credentials, session)
-    query = select(Order.__table__.columns).where(Order.user_id == user_id)
+    query = select(Order).where(Order.user_id == user_id)
     orders = await session.execute(query)
     orders = orders.mappings().all()
-    
-    return [SAccountOrders(**order) for order in orders]
+    return orders
     
 
