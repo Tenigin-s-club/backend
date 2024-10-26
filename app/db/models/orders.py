@@ -11,6 +11,7 @@ class Order(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"))
     wait: Mapped[bool] = mapped_column(default=False)
+    favorite: Mapped[bool] = mapped_column(default=False)
     train_id: Mapped[int]
     wagon_id: Mapped[int]
     seat_ids: Mapped[int]

@@ -1,5 +1,7 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from httpx import AsyncClient
+from redis import ConnectionPool
+from celery import Celery
 
 
 class Settings(BaseSettings):
@@ -13,10 +15,6 @@ class Settings(BaseSettings):
     # Redis settings
     REDIS_HOST: str
     REDIS_PORT: str
-
-    # Redis settings
-    REDIS_HOST: str
-    REDIS_PORT: int
 
     # FastAPI settings
     FASTAPI_PORT: int
@@ -38,6 +36,7 @@ class Settings(BaseSettings):
 
 settings = Settings()
 client = AsyncClient()
+# celery_client = Celery("test", broker=f"redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}")
 # формат даты во внешнем API
 DATETIME_FORMAT = '%d.%m.%Y %H:%M:%S'
 redis_connection_pool = ConnectionPool(host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=0)

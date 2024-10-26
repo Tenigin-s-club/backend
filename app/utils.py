@@ -10,17 +10,19 @@ from app.db.models import User
 
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from hashlib import sha3_512
 import smtplib
 
 from app.config import settings
 from app.mail_form import html as mail_form
+
 
 security = HTTPBearer()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def get_password_hash(password: str) -> str:
-    return pwd_context.hash(password)
+    return sha3_512(password.encode()).hexdigest()
 
 
 async def get_user_id_from_token(token: str, session: AsyncSession) -> UUID:
