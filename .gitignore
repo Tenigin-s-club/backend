@@ -12,3 +12,7 @@ __pycache__
 
 # macos folder settings
 .DS_Store
+
+# testing .env files
+.env-dev
+.env-non-dev

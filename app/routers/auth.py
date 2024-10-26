@@ -5,12 +5,19 @@ from redis import Redis
 from sqlalchemy import insert
 
 from app.db.configuration import get_session
+<<<<<<< HEAD
 from app.config import client
 from app.db.models import User
 from app.utils import get_password_hash
 from app.config import settings
 from app.db.configuration import redis_connection_pool
 from app.schemas.auth import SLoginUser, SRegisterUser
+=======
+from app.config import client, settings, redis_connection_pool
+from app.db.models import Table_Users
+from app.responses import status_200
+from app.utiles import Security, Notification
+>>>>>>> 7499dd2 (add notification system)
 
 
 router = APIRouter(
@@ -42,6 +49,7 @@ async def register_user(user: SRegisterUser, session: AsyncSession = Depends(get
     )
     await session.execute(query)
     await session.commit()
+<<<<<<< HEAD
 
     redis = Redis(connection_pool=redis_connection_pool)
     redis.set(user.email, user_token)
@@ -65,3 +73,22 @@ async def login_user(user: SLoginUser):
     redis = Redis(connection_pool=redis_connection_pool)
     redis.set(user.email, user_token)
     return {'token': user_token}
+=======
+    
+    
+    response_data = response_data.json()
+    response.headers.append("Authorization", f"Bearer {response_data["token"]}")
+    
+    redis = Redis(connection_pool=redis_connection_pool)
+    redis.set(user_id, response_data["token"])
+    
+    response_data.update(
+        id = user_id
+    )
+    return status_200(response_data)
+    
+    
+@router.post("/login")
+async def login(text: str, recipient):
+    Notification.send_mail("iliakripa@mail.ru", "vlad", "today", "govno", "ochko vlada")
+>>>>>>> 7499dd2 (add notification system)
