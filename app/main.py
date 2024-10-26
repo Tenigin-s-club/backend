@@ -10,7 +10,7 @@ from app.routers.account import router as account_router
 app = FastAPI(root_path='/api/v1')
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[f'http://localhost:{settings.FRONTEND_PORT}', 'http://localhost'],
+    allow_origins=['*'],
     allow_credentials=True,
     allow_methods=['*'],
     allow_headers=['*'],

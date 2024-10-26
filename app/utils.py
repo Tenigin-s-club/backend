@@ -5,6 +5,8 @@ from json import loads
 from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi.exceptions import HTTPException
+from fastapi import status
 
 from app.db.models import User
 
@@ -26,15 +28,21 @@ def get_password_hash(password: str) -> str:
 
 
 async def get_user_id_from_token(token: str, session: AsyncSession) -> UUID:
-    token_payload = token.split('.')[1]
-    decoded_payload = urlsafe_b64decode(
-        bytes(token_payload, encoding='utf-8')
-        + b'=' * (-len(token_payload) % 4)
-    ).decode('utf-8')
-    user_email = loads(decoded_payload)['sub']
-    query = select(User.id).filter_by(email=user_email)
-    result = await session.execute(query)
-    return result.mappings().one().get('id')
+    try:
+        token_payload = token.split('.')[1]
+        decoded_payload = urlsafe_b64decode(
+            bytes(token_payload, encoding='utf-8')
+            + b'=' * (-len(token_payload) % 4)
+        ).decode('utf-8')
+        user_email = loads(decoded_payload)['sub']
+        query = select(User.id).filter_by(email=user_email)
+        result = await session.execute(query)
+        result = result.mappings().one().get('id')
+        
+    except:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+    
+    return result
 
 
 class Notification:
