@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from httpx import AsyncClient
+from redis import ConnectionPool
 
 
 class Settings(BaseSettings):
