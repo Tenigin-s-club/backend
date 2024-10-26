@@ -9,6 +9,10 @@ class Settings(BaseSettings):
     POSTGRES_DB: str
     POSTGRES_USER: str
     POSTGRES_PASSWORD: str
+    
+    # Redis settings
+    REDIS_HOST: str
+    REDIS_PORT: str
 
     # Redis settings
     REDIS_HOST: str
@@ -19,7 +23,11 @@ class Settings(BaseSettings):
     FRONTEND_PORT: int
     API_ADDRESS: str
     TEAM: str
-
+    
+    # Notification settings
+    MAIL: str
+    MAIL_PASSWORD: str
+    
     @property
     def POSTGRES_URL(self):
         return (f'postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@'
@@ -32,3 +40,4 @@ settings = Settings()
 client = AsyncClient()
 # формат даты во внешнем API
 DATETIME_FORMAT = '%d.%m.%Y %H:%M:%S'
+redis_connection_pool = ConnectionPool(host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=0)

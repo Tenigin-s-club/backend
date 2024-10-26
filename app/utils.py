@@ -8,6 +8,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import User
 
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+import smtplib
+
+from app.config import settings
+from app.mail_form import html as mail_form
+
 security = HTTPBearer()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -26,3 +33,23 @@ async def get_user_id_from_token(token: str, session: AsyncSession) -> UUID:
     query = select(User.id).filter_by(email=user_email)
     result = await session.execute(query)
     return result.mappings().one().get('id')
+
+
+class Notification:
+    
+    @staticmethod
+    def send_mail(recipient: str, name, date, living_from, coming_to):
+        with smtplib.SMTP_SSL("smtp.mail.ru", 465) as session:    
+            
+            session.login(settings.MAIL, settings.MAIL_PASSWORD)
+            
+            content = mail_form.format(name=name, date=date, living_from=living_from, coming_to=coming_to)
+            
+            msg = MIMEMultipart()
+            msg["From"] = settings.MAIL
+            msg["To"] = recipient
+            msg["Subject"] = "Бронь места на поезд"
+            msg.attach(MIMEText(content, "html"))
+            
+            session.send_message(msg)
+            session.quit()
