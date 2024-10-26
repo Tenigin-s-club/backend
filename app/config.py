@@ -25,3 +25,5 @@ class Settings(BaseSettings):
 
 settings = Settings()
 client = AsyncClient()
+# формат даты во внешнем API
+DATETIME_FORMAT = '%d.%m.%Y %H:%M:%S'
