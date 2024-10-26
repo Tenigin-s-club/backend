@@ -86,3 +86,10 @@ async def search(
             suitable_wagons=suitable_wagons
         ))
     return suitable_trains
+
+
+@router.get('/cities')
+def get_cities_names() -> list[str]:
+    with open('cities.txt', 'r') as file:
+        cities = file.read().splitlines()
+    return cities
