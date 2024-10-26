@@ -5,6 +5,7 @@ from app.config import settings
 from app.routers.auth import router as auth_router
 from app.routers.orders import router as orders_router
 from app.routers.search import router as search_router
+from app.routers.account import router as account_router
 
 app = FastAPI(root_path='/api/v1')
 app.add_middleware(
@@ -15,5 +16,5 @@ app.add_middleware(
     allow_headers=['*'],
 )
 
-for router in [auth_router, orders_router, search_router]:
+for router in [auth_router, orders_router, search_router, account_router]:
     app.include_router(router)

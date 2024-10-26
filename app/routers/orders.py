@@ -23,6 +23,7 @@ async def get_orders(
         authorization: Annotated[HTTPAuthorizationCredentials, Depends(security)],
         session: AsyncSession = Depends(get_session)
 ) -> list[SOrderInfoNow]:
+    
     user_id = await get_user_id_from_token(authorization.credentials, session)
     query = select(Order.__table__.columns).filter_by(user_id=user_id)
     result = await session.execute(query)
@@ -35,13 +36,14 @@ async def get_favorite(
     authorization: Annotated[HTTPAuthorizationCredentials, Depends(security)],
     session: AsyncSession = Depends(get_session)
 ) -> list[SOrderFavorite]:
+    
     user_id = await get_user_id_from_token(authorization.credentials, session)
     query = select(Order.__table__.columns).filter_by(favorite=True, user_id=user_id)
     result = await session.execute(query)
     orders = result.mappings().all()
     return [SOrderFavorite(**order) for order in orders]
 
-@router.post("/favorite/add")
+@router.post("/favorite/add", status_code=status.HTTP_204_NO_CONTENT)
 async def add_new_favorite(
     order_info: SOrderInfo,
     authorization: Annotated[HTTPAuthorizationCredentials, Depends(security)],
@@ -57,8 +59,8 @@ async def add_new_favorite(
     await session.execute(query)
     await session.commit()
 
-@router.post("/", status_code=status.HTTP_204_NO_CONTENT)
-async def add_new_order(
+@router.post("/buy", status_code=status.HTTP_204_NO_CONTENT)
+async def buy_order(
         authorization: Annotated[HTTPAuthorizationCredentials, Depends(security)],
         order: SOrderInfo,
         session: AsyncSession = Depends(get_session)
@@ -80,4 +82,24 @@ async def add_new_order(
     )
     await session.execute(query)
     await session.commit()
+    
+@router.post("/add", status_code=status.HTTP_204_NO_CONTENT)
+async def add_order(
+    authorization: Annotated[HTTPAuthorizationCredentials, Depends(security)],
+        order: SOrderInfo,
+        session: AsyncSession = Depends(get_session)
+        ) -> None:
+    user_id = await get_user_id_from_token(authorization.credentials, session)
+    query = insert(Order).values(
+        user_id = user_id,
+        wait = True,
+        favorite = False,
+        train_id = order.train_id,
+        wagon_id = order.wagon_id,
+        seat_ids = order.seat_ids
+    )
+    await session.execute(query)
+    await session.commit()
+    
+    
 
