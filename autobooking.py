@@ -190,7 +190,7 @@ async def runnerv2():
     await asyncio.sleep(5)
     while True:
         global data, new_data
-        if not data:
+        if len(data) < TOTAL_RPS:
             data = new_data.copy()
             new_data = []
         start_time = time.monotonic()

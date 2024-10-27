@@ -44,7 +44,7 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
-client = AsyncClient()
+client = AsyncClient(timeout=60.0)
 celery_client = Celery("test", broker=settings.REDIS_URL+"/0", backend=settings.REDIS_URL+"/0")
 # формат даты во внешнем API
 DATETIME_FORMAT = '%d.%m.%Y %H:%M:%S'
