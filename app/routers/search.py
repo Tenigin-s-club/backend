@@ -1,12 +1,14 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials
 
-from app.config import client, settings, DATETIME_FORMAT
+from app.config import DATETIME_FORMAT, redis_connection_pool
 from app.utils import security
 from app.schemas.search import STrainInfo
-from httpx import Headers
 from datetime import date, datetime
 from typing import Annotated, Literal
+from redis import Redis
+from uuid import uuid4
+from json import loads, dumps
 
 router = APIRouter(
     prefix='/search',
@@ -38,15 +40,33 @@ async def search(
         min_travel_time: int | None = None,
         max_travel_time: int | None = None
 ) -> list[STrainInfo]:
+    search_id = str(uuid4())
     # получение поездов по нужному маршруту откуда-куда
-    response = await client.get(
-        url=f'{settings.API_ADDRESS}/api/info/trains',
-        params=[('start_point', start_point), ('end_point', end_point)],
-        headers=Headers({'Authorization': f'Bearer {authorization.credentials}'})
+    redis = Redis(connection_pool=redis_connection_pool)
+    redis.config_set('notify-keyspace-events', 'KEA')
+    sub = redis.pubsub()
+    sub.subscribe(f'__keyspace@0__:{search_id}')
+    redis.lpush(
+        'searchs',
+        dumps({
+            'start_point': start_point,
+            'end_point': end_point,
+            'token': authorization.credentials,
+            'search_id': search_id
+        })
     )
+    # отрегулировать timeout
+    sub.get_message(timeout=60.0)
+    message = sub.get_message(ignore_subscribe_messages=True, timeout=60.0)
+    # ЮВИКОРН ЗАВИСАЕТ
+    if not message:
+        raise HTTPException(status_code=500, detail='external API don\'t answer to requests ;(')
+    sub.close()
+    response = redis.get(search_id)
+    redis.delete(search_id)
 
     suitable_trains = []
-    for train in response.json():
+    for train in loads(response):
         startpoint_departure = datetime.strptime(train['startpoint_departure'], DATETIME_FORMAT)
         endpoint_arrival = datetime.strptime(train['endpoint_arrival'], DATETIME_FORMAT)
         train_travel_time = (endpoint_arrival - startpoint_departure).total_seconds() // 60
@@ -58,7 +78,7 @@ async def search(
         # есть ли свободные места
         if train_available_seats_count == 0: continue
         # подходит ли под пользовательские рамки времени поездки
-        if ((min_travel_time and train_travel_time < max_travel_time)
+        if ((min_travel_time and train_travel_time < min_travel_time)
                 or (max_travel_time and train_travel_time > max_travel_time)): continue
 
         suitable_wagons = []
