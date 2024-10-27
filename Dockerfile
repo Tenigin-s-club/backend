@@ -11,4 +11,5 @@ COPY . .
 
 # run entrypoint script
 RUN chmod 777 ./entrypoint.sh
+RUN chmod 777 ./celery_build.sh
 ENTRYPOINT ./entrypoint.sh
