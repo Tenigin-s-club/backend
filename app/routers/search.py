@@ -38,9 +38,9 @@ async def search(
         # дата в формате 2024-10-25
         departure_date: date,
         passenger_count: int,
-        seat_preference: list[Literal['upper', 'lower']],
-        wagon_type: list[Literal['PLATZCART', 'COUPE']],
-        fullness_type: list[Literal['LOW', 'MEDIUM', 'HIGH']],
+        seat_preference: list[Literal['upper', 'lower']] = Query(),
+        wagon_type: list[Literal['PLATZCART', 'COUPE']] = Query(),
+        fullness_type: list[Literal['LOW', 'MEDIUM', 'HIGH']] = Query(),
         # время поездки в минутах
         min_travel_time: int | None = None,
         max_travel_time: int | None = None
