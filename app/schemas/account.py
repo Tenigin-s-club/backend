@@ -12,3 +12,15 @@ class SAccountOrders(BaseModel):
     arriving_data: str
     start_point: str
     finish_point: str
+    
+class SAccountExtOrders(SAccountOrders):
+    id: int
+    type_wagon: str
+    type_shelf: int
+    number_wagon: int
+    number_seat: int
+    departure_date: str
+    arriving_data: str
+    start_point: str
+    finish_point: str
+    stops: list[str]
