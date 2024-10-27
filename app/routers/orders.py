@@ -9,9 +9,9 @@ from httpx import Headers
 from app.utils import security, get_user_id_from_token, new_order
 from app.db.configuration import get_session
 from app.db.models import Order, OrderStatus
-from app.schemas.orders import SOrderInfoNow, SOrderInfo, SOrderFavorite, SOrderAddInfo, SOrderSetStatus, STrainObject, STrainStorage, STrainWagonInfo
+from app.schemas.orders import  SOrderInfo, SOrderAddInfo, SOrderSetStatus
 from app.config import client, settings
-
+from app.background_task import check_new_orders
 
 router = APIRouter(
     prefix='/orders',
@@ -99,31 +99,9 @@ async def delete_order(
     )
     await session.execute(query)
     await session.commit()
+    
 
-
-@router.get("/train/wagon/{id}")
-async def get_info_wagon(
-    wagon_id: int,
-    authorization: Annotated[HTTPAuthorizationCredentials, Depends(security)]
-    ):
-    link = "/api/info/wagons/{}"
-    wagon_data = await client.get(settings.API_ADDRESS + link.format(wagon_id),
-                                  headers=Headers({"Authorization": f"Bearer {authorization.credentials}"}))
-    # try:
-    wagon_data = wagon_data.json()
-    wagon_data = wagon_data["seats"]
-    wagon_data.sort(key=lambda x: int(x["seatNum"]))    
-    main_storage = []
-    while wagon_data:                
-        storage = []
-        for _ in range(min(4, len(wagon_data))):
-            storage.append(STrainObject(**(wagon_data.pop())))
-            
-        main_storage.append(STrainStorage(cupe=storage))
-        
-    return STrainWagonInfo(data=main_storage)
-    # except Exception as e:
-    #     print(e)
-    
-    
-    
+@router.get("/total/add/data")
+async def test_celery():
+    check_new_orders.delay("test.json")
+    return 200

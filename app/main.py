@@ -7,6 +7,7 @@ from app.routers.orders import router as orders_router
 from app.routers.search import router as search_router
 from app.routers.account import router as account_router
 from app.routers.favorites import router as favorites_router
+from app.routers.train import router as train_router
 
 app = FastAPI(root_path='/api/v1')
 app.add_middleware(
@@ -18,5 +19,5 @@ app.add_middleware(
 )
 
 for router in [auth_router, orders_router, search_router,
-               account_router, favorites_router]:
+               account_router, favorites_router, train_router]:
     app.include_router(router)

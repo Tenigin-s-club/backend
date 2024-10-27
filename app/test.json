@@ -1,0 +1,50 @@
+[
+    {
+            "id": 1,
+            "startpoint": "Moscow",
+            "endpoint": "Moscow",
+            "wagon_type": "COUPE",
+            "ticket_count": 1,
+            "seat_preference": [
+                "upper"
+            ],
+            "departure_dates": ["26.10.2024"]
+    },
+    {
+            "id": 2,
+            "startpoint": "Moscow",
+            "endpoint": "Moscow",
+            "wagon_type": "PLATZCART",
+            "ticket_count": 11,
+            "seat_preference": [
+                "upper"
+            ],
+            "departure_dates": ["26.10.2024", "27.10.2024"]
+    },
+    {
+            "id": 3,
+            "startpoint": "Moscow",
+            "endpoint": "Moscow",
+            "wagon_type": "PLATZCART",
+            "ticket_count": 3,
+            "seat_preference": [
+                "upper",
+                "upper",
+                "lower"
+            ],
+            "departure_dates": ["26.10.2024"]
+    },
+    {
+            "id": 4,
+            "startpoint": "Moscow",
+            "endpoint": "Moscow",
+            "wagon_type": "COUPE",
+            "ticket_count": 3,
+            "seat_preference": [
+                "upper",
+                "upper",
+                "lower"
+            ],
+            "departure_dates": ["26.10.2024", "27.10.2024"]
+    }
+    ]
