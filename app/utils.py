@@ -55,7 +55,11 @@ async def get_user_id_from_token(token: str, session: AsyncSession) -> UUID:
 
 
 async def new_order(
+<<<<<<< HEAD
+    order: SOrderInfo,
+=======
     order: SOrderInfo
+>>>>>>> f06c3ebe1dff4f58e3ab58b372f5de94e3186646
     ) -> int:
     body = {
         "train_id": order.train_id,
@@ -74,6 +78,8 @@ async def new_order(
     return order_id
 
 
+            
+
 def send_mail(recipient: str, name, date, living_from, coming_to):
     with smtplib.SMTP_SSL("smtp.mail.ru", 465) as session:
         session.login(settings.MAIL, settings.MAIL_PASSWORD)
@@ -87,5 +93,3 @@ def send_mail(recipient: str, name, date, living_from, coming_to):
 
         session.send_message(msg)
         session.quit()
-            
-

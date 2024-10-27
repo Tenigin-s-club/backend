@@ -1,17 +1,17 @@
-from fastapi import APIRouter, Depends, status, HTTPException
+from fastapi import APIRouter, Depends, status, HTTPException, BackgroundTasks
 from fastapi.security import HTTPAuthorizationCredentials
 from httpx import Headers
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import insert, select, update, delete
 from typing import Annotated
 from httpx import Headers
+import logging
 
-from app.utils import security, get_user_id_from_token, new_order
+from app.utils import security, get_user_id_from_token, new_order, send_mail
 from app.db.configuration import get_session
 from app.db.models import Order, OrderStatus
 from app.schemas.orders import  SOrderInfo, SOrderAddInfo, SOrderSetStatus
 from app.config import client, settings
-from app.background_task import check_new_orders
 
 router = APIRouter(
     prefix='/orders',
@@ -23,7 +23,8 @@ router = APIRouter(
 async def buy_order(
         authorization: Annotated[HTTPAuthorizationCredentials, Depends(security)],
         order: SOrderAddInfo,
-        session: AsyncSession = Depends(get_session)
+        session: AsyncSession = Depends(get_session),
+        background_task = BackgroundTasks
 ) -> None:
 
     await new_order(SOrderInfo(**order.model_dump()))
@@ -35,6 +36,7 @@ async def buy_order(
     )
     await session.execute(query)
     await session.commit()
+    background_task.add_task(send_mail, order.email, order.name, order.departure_date, order.start_point, order.finish_point)
    
     
 @router.post("/reserve", status_code=status.HTTP_204_NO_CONTENT)
@@ -100,8 +102,3 @@ async def delete_order(
     await session.execute(query)
     await session.commit()
     
-
-@router.get("/total/add/data")
-async def test_celery():
-    check_new_orders.delay("test.json")
-    return 200

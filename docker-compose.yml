@@ -23,13 +23,6 @@ services:
       retries: 60
     restart: always
 
-  celery:
-    build: .
-    env_file: .env
-    command: "/celery_build.sh"
-    depends_on:
-      redis:
-        condition: service_healthy
 
   backend:
    build: .

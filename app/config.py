@@ -2,6 +2,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from httpx import AsyncClient, Limits
 from redis import ConnectionPool
 from celery import Celery
+from app.notification import send_mail
 
 
 class Settings(BaseSettings):
