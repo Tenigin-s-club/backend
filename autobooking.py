@@ -27,7 +27,7 @@ async def process_waiting(waiting: dict):
     response = await client.get(
         url=f'{settings.API_ADDRESS}/api/info/wagons',
         params=[('train_id', waiting['train_id'])],
-        headers=Headers({'Authorization': f'Bearer {token}'})
+        headers=Headers({'Authorization': f'Bearer {settings.TEAM_TOKEN}'})
     )
     for wagon in response:
         for seat in wagon['seats']:
@@ -46,7 +46,7 @@ async def process_waiting(waiting: dict):
 
         response = await client.get(
             url=f'{settings.API_ADDRESS}/api/info/train/{waiting['train_id']}',
-            headers=Headers({'Authorization': f'Bearer {token}'})
+            headers=Headers({'Authorization': f'Bearer {settings.TEAM_TOKEN}'})
         )
 
         query = insert(Order).values(
@@ -78,13 +78,13 @@ async def process_search(search: bytes):
             response = await client.get(
                 url=f'{settings.API_ADDRESS}/api/info/trains',
                 params=[('start_point', decoded_search['start_point']), ('end_point', decoded_search['end_point'])],
-                headers=Headers({'Authorization': f'Bearer {decoded_search['token']}'})
+                headers=Headers({'Authorization': f'Bearer {settings.TEAM_TOKEN}'})
             )
         case 'wagons':
             response = await client.get(
                 url=f'{settings.API_ADDRESS}/api/info/wagons',
                 params=[('train_id', decoded_search['train_id'])],
-                headers=Headers({'Authorization': f'Bearer {decoded_search['token']}'})
+                headers=Headers({'Authorization': f'Bearer {settings.TEAM_TOKEN}'})
             )
     redis.set(
         decoded_search['search_id'],

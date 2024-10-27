@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     FRONTEND_PORT: int
     API_ADDRESS: str
     TEAM: str
+    TEAM_TOKEN: str
     
     # Notification settings
     MAIL: str

@@ -56,7 +56,6 @@ async def search(
             'type': 'base',
             'start_point': start_point,
             'end_point': end_point,
-            'token': authorization.credentials,
             'search_id': search_id
         })
     )
@@ -91,7 +90,6 @@ async def search(
             dumps({
                 'type': 'wagons',
                 'train_id': train['train_id'],
-                'token': authorization.credentials,
                 'search_id': search_id
             })
         )
