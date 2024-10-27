@@ -126,6 +126,7 @@ async def search(
         # поезд окончательно подходит пользователю, сохраняем его
         suitable_trains.append(STrainInfo(
             train_id=train['train_id'],
+            stops=train['global_route'].split(' -> '),
             startpoint=start_point,
             startpoint_departure=startpoint_departure,
             endpoint=end_point,
