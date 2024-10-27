@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status, HTTPException
+from fastapi import APIRouter, Depends, status, HTTPException, BackgroundTasks
 from fastapi.security import HTTPAuthorizationCredentials
 from httpx import Headers
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -23,10 +23,11 @@ router = APIRouter(
 async def buy_order(
         authorization: Annotated[HTTPAuthorizationCredentials, Depends(security)],
         order: SOrderAddInfo,
-        session: AsyncSession = Depends(get_session)
+        session: AsyncSession = Depends(get_session),
+        background_task = BackgroundTasks
 ) -> None:
 
-    await new_order(SOrderInfo(**order.model_dump()), authorization.credentials)
+    await new_order(SOrderInfo(**order.model_dump()))
     user_id = await get_user_id_from_token(authorization.credentials, session)
     query = insert(Order).values(
         user_id=user_id,
@@ -35,7 +36,7 @@ async def buy_order(
     )
     await session.execute(query)
     await session.commit()
-    send_mail(order.email, order.name, order.departure_date, order.start_point, order.finish_point)
+    background_task.add_task(send_mail, order.email, order.name, order.departure_date, order.start_point, order.finish_point)
    
     
 @router.post("/reserve", status_code=status.HTTP_204_NO_CONTENT)
@@ -71,7 +72,7 @@ async def update_status(
         session: AsyncSession = Depends(get_session)
         
 ) -> None:
-    await new_order(SOrderInfo(**order.model_dump()), authorization.credentials)
+    await new_order(SOrderInfo(**order.model_dump()))
     user_id = await get_user_id_from_token(authorization.credentials, session)
     
     query = update(Order).values(
