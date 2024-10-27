@@ -10,7 +10,7 @@ from app.db.models import Order, User
 from app.schemas.account import SAccountInfo, SAccountOrders, SAccountExtOrders
 
 
-router = APIRouter(
+router = APIRouter( 
     prefix='/account',
     tags=['account']
 )
