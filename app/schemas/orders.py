@@ -38,3 +38,15 @@ class SOrderSetStatus(BaseModel, SOrderBase):
     status: OrderStatus
     
     
+class STrainObject(BaseModel):
+    seatNum: str
+    bookingStatus: str = "CLOSED"
+
+class STrainStorage(BaseModel):
+    cupe: list[STrainObject]
+    
+    
+class STrainWagonInfo(BaseModel):
+    data: list[STrainStorage]
+    
+    
