@@ -24,6 +24,10 @@ class Settings(BaseSettings):
     # Notification settings
     MAIL: str
     MAIL_PASSWORD: str
+
+    # JWT settings
+    SECRET_KEY: str
+    ENCODE_ALGORITHM: str
     
     @property
     def POSTGRES_URL(self):

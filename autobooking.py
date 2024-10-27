@@ -2,7 +2,7 @@ import time
 from random import randint
 
 from redis import Redis
-from sqlalchemy import select
+from sqlalchemy import select, delete, insert
 
 from app.config import client, settings
 from httpx import Headers
@@ -10,7 +10,10 @@ import asyncio
 from json import loads, dumps
 
 from app.db.configuration import redis_connection_pool, async_session_factory
-from app.db.models import Order
+from app.db.models import Order, Wait, User
+from app.routers.search import get_suitable_trains
+from app.schemas.orders import SOrderInfo
+from app.utils import new_order, send_mail
 
 # очередь на redis
 SEARCH_RPS = 3
@@ -20,14 +23,61 @@ TOTAL_RPS = SEARCH_RPS + WAITINGS_RPS
 redis = Redis(connection_pool=redis_connection_pool)
 
 
+async def process_wagon_info(train_id: int, token: str):
+    response = await client.get(
+        url=f'{settings.API_ADDRESS}/api/info/wagons',
+        params=[('train_id', train_id)],
+        headers=Headers({'Authorization': f'Bearer {token}'})
+    )
+
+
 async def process_waiting(waiting: dict):
     token = redis.get(str(waiting['user_id']))
     response = await client.get(
-        url=f'{settings.API_ADDRESS}/api/info/trains',
-        params=[('start_point', waiting['start_point']), ('end_point', waiting['end_point'])],
+        url=f'{settings.API_ADDRESS}/api/info/wagons',
+        params=[('train_id', waiting['train_id'])],
         headers=Headers({'Authorization': f'Bearer {token}'})
     )
-    # если нужные билеты есть - обновляем бд (в том числе статус wait)
+    for wagon in response:
+        for seat in wagon['seats']:
+            if seat['bookingStatus'] == 'FREE':
+                waiting['wagon_id'] = wagon['wagon_id']
+                waiting['seat_ids'] = [seat['seat_id']]
+                await new_order(SOrderInfo(
+                    train_id=waiting['train_id'],
+                    wagon_id=wagon['wagon_id'],
+                    seat_ids=[seat['seat_id']]
+                ), token)
+    async with async_session_factory() as session:
+        query = delete(Wait).filter_by(id=waiting['id'])
+        await session.execute(query)
+        await session.commit()
+
+        response = await client.get(
+            url=f'{settings.API_ADDRESS}/api/info/train/{waiting['train_id']}',
+            headers=Headers({'Authorization': f'Bearer {token}'})
+        )
+
+        query = insert(Order).values(
+            user_id=waiting['user_id'],
+            status='RESERVE',
+            train_id=waiting['train_id'],
+            wagon_id=waiting['wagon_id'],
+            seat_ids=waiting['seat_id'],
+            departure_date=response['startpoint_departure'][:10],
+            arriving_data=response['endpoint_arrival'][:10],
+            start_point=response['detailed_route'][0]['name'],
+            finish_point=response['detailed_route'][-1]['name']
+        )
+        await session.execute(query)
+        await session.commit()
+
+        query = select(User).filter_by(id=waiting['user_id'])
+        result = await session.execute(query)
+        user = result.mappings().one()
+
+    send_mail(user['email'], user['fio'], response['startpoint_departure'][:10],
+              response['detailed_route'][0]['name'], response['detailed_route'][-1]['name'])
 
 
 async def process_search(search: bytes):
@@ -46,7 +96,7 @@ async def process_search(search: bytes):
 async def get_waitings_list():
     # оптимизация получения из постгреса (ищем похожее, не шлём одинаковые запросы и т.п.)
     async with async_session_factory() as session:
-        query = select(Order.__table__.columns).filter_by(wait=True)
+        query = select(Wait.__table__.columns)
         result = await session.execute(query)
         return result.mappings().all()
 

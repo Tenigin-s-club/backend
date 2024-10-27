@@ -1,8 +1,11 @@
 from fastapi import APIRouter, Depends, Query, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials
+from sqlalchemy import insert
 
 from app.config import DATETIME_FORMAT, redis_connection_pool
-from app.utils import security
+from app.db.configuration import get_session
+from app.db.models import Wait
+from app.utils import security, get_user_id_from_token
 from app.schemas.search import STrainInfo
 from datetime import date, datetime
 from typing import Annotated, Literal
@@ -36,6 +39,7 @@ async def search(
         departure_date: date,
         wagon_type: list[Literal['PLATZCART', 'COUPE']] = Query(),
         fullness_type: list[Literal['LOW', 'MEDIUM', 'HIGH']] = Query(),
+        passenger_count: int,
         # время поездки в минутах
         min_travel_time: int | None = None,
         max_travel_time: int | None = None
@@ -58,7 +62,6 @@ async def search(
     # отрегулировать timeout
     sub.get_message(timeout=60.0)
     message = sub.get_message(ignore_subscribe_messages=True, timeout=60.0)
-    # ЮВИКОРН ЗАВИСАЕТ
     if not message:
         raise HTTPException(status_code=500, detail='external API don\'t answer to requests ;(')
     sub.close()
@@ -80,6 +83,8 @@ async def search(
         # подходит ли под пользовательские рамки времени поездки
         if ((min_travel_time and train_travel_time < min_travel_time)
                 or (max_travel_time and train_travel_time > max_travel_time)): continue
+        # достаточно ли мест в вагоне
+        if passenger_count > train_available_seats_count: continue
 
         suitable_wagons = []
         for wagon in train['wagons_info']:
@@ -106,6 +111,20 @@ async def search(
             suitable_wagons=suitable_wagons
         ))
     return suitable_trains
+
+
+@router.post('/autobooking')
+async def create_autobooking(
+        authorization: Annotated[HTTPAuthorizationCredentials, Depends(security)],
+        train_id: int, session = Depends(get_session)
+):
+    user_id = get_user_id_from_token(authorization.credentials)
+    query = insert(Wait).values(
+        user_id=user_id,
+        train_id=train_id
+    )
+    await session.execute(query)
+    await session.commit()
 
 
 @router.get('/cities')
