@@ -26,7 +26,7 @@ async def buy_order(
         session: AsyncSession = Depends(get_session)
 ) -> None:
 
-    await new_order(SOrderInfo(**order.model_dump()), authorization.credentials)
+    await new_order(SOrderInfo(**order.model_dump()))
     user_id = await get_user_id_from_token(authorization.credentials, session)
     query = insert(Order).values(
         user_id=user_id,
@@ -70,7 +70,7 @@ async def update_status(
         session: AsyncSession = Depends(get_session)
         
 ) -> None:
-    await new_order(SOrderInfo(**order.model_dump()), authorization.credentials)
+    await new_order(SOrderInfo(**order.model_dump()))
     user_id = await get_user_id_from_token(authorization.credentials, session)
     
     query = update(Order).values(

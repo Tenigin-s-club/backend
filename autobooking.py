@@ -1,4 +1,6 @@
+import json
 import time
+from datetime import date, datetime
 from random import randint
 
 from redis import Redis
@@ -17,7 +19,7 @@ from app.utils import new_order, send_mail
 # очередь на redis
 SEARCH_RPS = 3
 WAITINGS_RPS = 6
-TOTAL_RPS = SEARCH_RPS + WAITINGS_RPS
+# TOTAL_RPS = SEARCH_RPS + WAITINGS_RPS
 
 redis = Redis(connection_pool=redis_connection_pool)
 
@@ -38,7 +40,7 @@ async def process_waiting(waiting: dict):
                     train_id=waiting['train_id'],
                     wagon_id=wagon['wagon_id'],
                     seat_ids=[seat['seat_id']]
-                ), token)
+                ))
     async with async_session_factory() as session:
         query = delete(Wait).filter_by(id=waiting['id'])
         await session.execute(query)
@@ -123,4 +125,86 @@ async def runner():
         await asyncio.sleep(1 - (stop_time - start_time) if (stop_time - start_time > 1) else 0)
 
 
-asyncio.run(runner())
+async def book_train(user_wish):
+    global data, new_data
+    trains = await client.get(
+        url=f'{settings.API_ADDRESS}/api/info/trains',
+        params=[('start_point', user_wish['startpoint']), ('end_point', user_wish['endpoint'])],
+        headers=Headers({'Authorization': f'Bearer {settings.TEAM_TOKEN}'})
+    )
+    train_id, wagon_id, seat_ids = None, None, []
+    print(trains.status_code)
+    if not trains or trains.status_code != 200:
+        new_data.append(user_wish)
+        return
+    for train in trains.json():
+        # на нужную ли дату этот поезд
+        startpoint_departure = datetime.strptime(train['startpoint_departure'], '%d.%m.%Y %H:%M:%S')
+        departure_dates = [datetime.strptime(dep, '%d.%m.%Y') for dep in user_wish['departure_dates']]
+        if startpoint_departure not in departure_dates: continue
+        # есть ли столько свободных мест на поезде
+        if user_wish['ticket_count'] > train['available_seats_count']: continue
+        # смотрим все вагоны поезда
+        wagons = await client.get(
+            url=f'{settings.API_ADDRESS}/api/info/wagons',
+            params=[('train_id', train['train_id'])],
+            headers=Headers({'Authorization': f'Bearer {settings.TEAM_TOKEN}'})
+        )
+        for wagon in wagons.json():
+            # нужного ли типа этот вагон
+            if wagon['type'] != user_wish['wagon_type']: continue
+            need_lower, need_upper = user_wish['seat_preference'].count('lower'), user_wish['seat_preference'].count('upper')
+            lower_passengers, upper_passengers = [], []
+            for seat in wagon['seats']:
+                # если место занято - пропускаем его
+                if seat['bookingStatus'] != 'FREE': continue
+                if seat['seatNum'] % 2: lower_passengers.append(seat['seat_id'])
+                else: upper_passengers.append(seat['seat_id'])
+            # хватит ли нужных (верхних/нижних) мест в поезде
+            if need_lower > len(lower_passengers) or need_upper > len(upper_passengers): continue
+
+            # прошли все критерии, значит вагон подходит к нам
+            train_id = train['train_id']
+            wagon_id = wagon['wagon_id']
+            seat_ids = lower_passengers[:need_lower] + upper_passengers[:need_upper]
+
+    # прошли все поезда, если не нашли подходящий поезд, то завершаемся
+    if not train_id or not wagon_id or not seat_ids:
+        new_data.append(user_wish)
+        return
+    # иначе бронируем место
+    response = await client.post(
+        url=f'{settings.API_ADDRESS}/api/order',
+        json={
+            'train_id': train_id,
+            'wagon_id': wagon_id,
+            'seat_ids': seat_ids
+        },
+        headers=Headers({'Authorization': f'Bearer {settings.TEAM_TOKEN}'})
+    )
+    if response.status_code == 200:
+        print(f'{user_wish['id']}. wow')
+
+
+async def runnerv2():
+    await asyncio.sleep(5)
+    while True:
+        global data, new_data
+        if not data:
+            data = new_data.copy()
+            new_data = []
+        start_time = time.monotonic()
+        for _ in range(TOTAL_RPS):
+            _ = asyncio.create_task(book_train(data.pop()))
+            await asyncio.sleep(sleep_time)
+        stop_time = time.monotonic()
+        await asyncio.sleep(1 - (stop_time - start_time) if (stop_time - start_time > 1) else 0)
+        print('second end')
+
+
+data = json.load(open('travel_data.json'))
+new_data = []
+TOTAL_RPS = 5
+sleep_time = 0.9 / TOTAL_RPS
+# asyncio.run(runner())
+asyncio.run(runnerv2())

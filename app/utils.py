@@ -55,8 +55,7 @@ async def get_user_id_from_token(token: str, session: AsyncSession) -> UUID:
 
 
 async def new_order(
-    order: SOrderInfo,
-    token: str
+    order: SOrderInfo
     ) -> int:
     body = {
         "train_id": order.train_id,
@@ -66,7 +65,7 @@ async def new_order(
     response = await client.post(
         url=f'{settings.API_ADDRESS}/api/order',
         json=body,
-        headers=Headers({'Authorization': f'Bearer {token}'})
+        headers=Headers({'Authorization': f'Bearer {settings.TEAM_TOKEN}'})
     )
     if response.status_code != status.HTTP_200_OK:
         raise HTTPException(status_code=response.status_code)

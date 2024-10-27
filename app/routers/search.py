@@ -114,7 +114,7 @@ async def search(
             suitable_wagons.append(wagon['wagon_id'])
             for seat in wagon['seats']:
                 if seat['seatNum'] % 2: lower_passengers += 1
-                else: lower_passengers += 1
+                else: upper_passengers += 1
 
         # хватит ли нужных (верхних/нижних) мест в поезде
         if seat_preference.count('lower') > lower_passengers or seat_preference.count('upper') > upper_passengers: continue
