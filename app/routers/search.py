@@ -38,8 +38,9 @@ async def search(
         # дата в формате 2024-10-25
         departure_date: date,
         passenger_count: int,
-        wagon_type: list[Literal['PLATZCART', 'COUPE']] = Query(),
-        fullness_type: list[Literal['LOW', 'MEDIUM', 'HIGH']] = Query(),
+        seat_preference: list[Literal['upper', 'lower']],
+        wagon_type: list[Literal['PLATZCART', 'COUPE']],
+        fullness_type: list[Literal['LOW', 'MEDIUM', 'HIGH']],
         # время поездки в минутах
         min_travel_time: int | None = None,
         max_travel_time: int | None = None
@@ -101,14 +102,22 @@ async def search(
         redis.delete(search_id)
         wagons = loads(response)
 
+        lower_passengers, upper_passengers = 0, 0
+        lower_passengers = seat_preference.count('lower')
+        upper_passengers = seat_preference.count('upper')
         suitable_wagons = []
-        for wagon in train['wagons_info']:
+        for wagon in loads(response):
             # подсчёт общего количества мест в поезде
             total_seats_count += seats_in_wagon[wagon['type']]
             # если вагон нужного пользователю типа - сохраняем его id
             if wagon['type'] not in wagon_type: continue
             suitable_wagons.append(wagon['wagon_id'])
+            for seat in wagon['seats']:
+                if seat['seatNum'] % 2: lower_passengers += 1
+                else: lower_passengers += 1
 
+        # хватит ли нужных (верхних/нижних) мест в поезде
+        if seat_preference.count('lower') > lower_passengers or seat_preference.count('upper') > upper_passengers: continue
         # наполненность поезда по показателю свободных мест в поезде / всего мест в поезде
         train_fullness = (1 - train_available_seats_count / total_seats_count) * 100
         # подходит ли под пользовательские рамки наполненность поезда
