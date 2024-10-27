@@ -37,9 +37,9 @@ async def search(
         end_point: str,
         # дата в формате 2024-10-25
         departure_date: date,
+        passenger_count: int,
         wagon_type: list[Literal['PLATZCART', 'COUPE']] = Query(),
         fullness_type: list[Literal['LOW', 'MEDIUM', 'HIGH']] = Query(),
-        passenger_count: int,
         # время поездки в минутах
         min_travel_time: int | None = None,
         max_travel_time: int | None = None
@@ -53,6 +53,7 @@ async def search(
     redis.lpush(
         'searchs',
         dumps({
+            'type': 'base',
             'start_point': start_point,
             'end_point': end_point,
             'token': authorization.credentials,
@@ -60,11 +61,10 @@ async def search(
         })
     )
     # отрегулировать timeout
-    sub.get_message(timeout=60.0)
+    sub.get_message()
     message = sub.get_message(ignore_subscribe_messages=True, timeout=60.0)
     if not message:
         raise HTTPException(status_code=500, detail='external API don\'t answer to requests ;(')
-    sub.close()
     response = redis.get(search_id)
     redis.delete(search_id)
 
@@ -85,6 +85,23 @@ async def search(
                 or (max_travel_time and train_travel_time > max_travel_time)): continue
         # достаточно ли мест в вагоне
         if passenger_count > train_available_seats_count: continue
+
+        redis.lpush(
+            'searchs',
+            dumps({
+                'type': 'wagons',
+                'train_id': train['train_id'],
+                'token': authorization.credentials,
+                'search_id': search_id
+            })
+        )
+        sub.get_message()
+        message = sub.get_message(ignore_subscribe_messages=True, timeout=60.0)
+        if not message:
+            raise HTTPException(status_code=500, detail='external API don\'t answer to requests ;(')
+        response = redis.get(search_id)
+        redis.delete(search_id)
+        wagons = loads(response)
 
         suitable_wagons = []
         for wagon in train['wagons_info']:

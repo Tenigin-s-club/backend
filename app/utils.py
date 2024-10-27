@@ -39,7 +39,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 def generate_token(user_id: UUID) -> str:
     expire = datetime.now(timezone.utc) + token_expiration_time
-    payload = {'exp': expire, 'sub': user_id}
+    payload = {'exp': expire, 'sub': str(user_id)}
     encoded_jwt = jwt.encode(payload, settings.SECRET_KEY, settings.ENCODE_ALGORITHM)
     return encoded_jwt
 

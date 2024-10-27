@@ -11,7 +11,6 @@ from json import loads, dumps
 
 from app.db.configuration import redis_connection_pool, async_session_factory
 from app.db.models import Order, Wait, User
-from app.routers.search import get_suitable_trains
 from app.schemas.orders import SOrderInfo
 from app.utils import new_order, send_mail
 
@@ -21,14 +20,6 @@ WAITINGS_RPS = 6
 TOTAL_RPS = SEARCH_RPS + WAITINGS_RPS
 
 redis = Redis(connection_pool=redis_connection_pool)
-
-
-async def process_wagon_info(train_id: int, token: str):
-    response = await client.get(
-        url=f'{settings.API_ADDRESS}/api/info/wagons',
-        params=[('train_id', train_id)],
-        headers=Headers({'Authorization': f'Bearer {token}'})
-    )
 
 
 async def process_waiting(waiting: dict):
@@ -82,11 +73,19 @@ async def process_waiting(waiting: dict):
 
 async def process_search(search: bytes):
     decoded_search = loads(search.decode('utf-8').replace("'", '"'))
-    response = await client.get(
-        url=f'{settings.API_ADDRESS}/api/info/trains',
-        params=[('start_point', decoded_search['start_point']), ('end_point', decoded_search['end_point'])],
-        headers=Headers({'Authorization': f'Bearer {decoded_search['token']}'})
-    )
+    match decoded_search['type']:
+        case 'base':
+            response = await client.get(
+                url=f'{settings.API_ADDRESS}/api/info/trains',
+                params=[('start_point', decoded_search['start_point']), ('end_point', decoded_search['end_point'])],
+                headers=Headers({'Authorization': f'Bearer {decoded_search['token']}'})
+            )
+        case 'wagons':
+            response = await client.get(
+                url=f'{settings.API_ADDRESS}/api/info/wagons',
+                params=[('train_id', decoded_search['train_id'])],
+                headers=Headers({'Authorization': f'Bearer {decoded_search['token']}'})
+            )
     redis.set(
         decoded_search['search_id'],
         dumps(response.json()) if response.status_code == 200 else 'something went wrong with external API :('
