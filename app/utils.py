@@ -55,7 +55,11 @@ async def get_user_id_from_token(token: str, session: AsyncSession) -> UUID:
 
 
 async def new_order(
+<<<<<<< HEAD
     order: SOrderInfo,
+=======
+    order: SOrderInfo
+>>>>>>> f06c3ebe1dff4f58e3ab58b372f5de94e3186646
     ) -> int:
     body = {
         "train_id": order.train_id,

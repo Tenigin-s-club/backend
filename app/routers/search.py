@@ -37,9 +37,9 @@ async def search(
         # дата в формате 2024-10-25
         departure_date: date,
         passenger_count: int,
-        seat_preference: list[Literal['upper', 'lower']],
-        wagon_type: str,
-        fullness_type: list[Literal['LOW', 'MEDIUM', 'HIGH']],
+        seat_preference: list[Literal['upper', 'lower']] = Query(),
+        wagon_type: list[Literal['PLATZCART', 'COUPE']] = Query(),
+        fullness_type: list[Literal['LOW', 'MEDIUM', 'HIGH']] = Query(),
         # время поездки в минутах
         min_travel_time: int | None = None,
         max_travel_time: int | None = None
@@ -113,7 +113,7 @@ async def search(
             suitable_wagons.append(wagon['wagon_id'])
             for seat in wagon['seats']:
                 if seat['seatNum'] % 2: lower_passengers += 1
-                else: lower_passengers += 1
+                else: upper_passengers += 1
 
         # хватит ли нужных (верхних/нижних) мест в поезде
         if seat_preference.count('lower') > lower_passengers or seat_preference.count('upper') > upper_passengers: continue
@@ -125,6 +125,7 @@ async def search(
         # поезд окончательно подходит пользователю, сохраняем его
         suitable_trains.append(STrainInfo(
             train_id=train['train_id'],
+            stops=train['global_route'].split(' -> '),
             startpoint=start_point,
             startpoint_departure=startpoint_departure,
             endpoint=end_point,
