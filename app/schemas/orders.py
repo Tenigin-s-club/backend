@@ -18,6 +18,8 @@ class SOrderInfoNow(BaseModel, SOrderBase):
 
     
 class SOrderAddInfo(BaseModel, SOrderBase):
+    email: str
+    name: str
     departure_date: str
     arriving_data: str
     start_point: str

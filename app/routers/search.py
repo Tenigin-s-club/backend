@@ -32,14 +32,13 @@ seats_in_wagon = {
 
 @router.get('')
 async def search(
-        authorization: Annotated[HTTPAuthorizationCredentials, Depends(security)],
         start_point: str,
         end_point: str,
         # дата в формате 2024-10-25
         departure_date: date,
         passenger_count: int,
         seat_preference: list[Literal['upper', 'lower']],
-        wagon_type: list[Literal['PLATZCART', 'COUPE']],
+        wagon_type: str,
         fullness_type: list[Literal['LOW', 'MEDIUM', 'HIGH']],
         # время поездки в минутах
         min_travel_time: int | None = None,
@@ -77,7 +76,7 @@ async def search(
         train_available_seats_count = train['available_seats_count']
 
         # на нужную ли дату этот поезд
-        if departure_date != startpoint_departure.date(): continue
+        if startpoint_departure.date() not in departure_date: continue
         # есть ли свободные места
         if train_available_seats_count == 0: continue
         # подходит ли под пользовательские рамки времени поездки
@@ -110,7 +109,7 @@ async def search(
             # подсчёт общего количества мест в поезде
             total_seats_count += seats_in_wagon[wagon['type']]
             # если вагон нужного пользователю типа - сохраняем его id
-            if wagon['type'] not in wagon_type: continue
+            if wagon['type'] != wagon_type: continue
             suitable_wagons.append(wagon['wagon_id'])
             for seat in wagon['seats']:
                 if seat['seatNum'] % 2: lower_passengers += 1

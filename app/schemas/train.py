@@ -3,6 +3,7 @@ from pydantic import BaseModel
 
 class STrainObject(BaseModel):
     seatNum: str
+    price: int
     bookingStatus: str = "CLOSED"
 
 class STrainStorage(BaseModel):

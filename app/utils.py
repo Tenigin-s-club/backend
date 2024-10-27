@@ -75,6 +75,8 @@ async def new_order(
     return order_id
 
 
+            
+
 def send_mail(recipient: str, name, date, living_from, coming_to):
     with smtplib.SMTP_SSL("smtp.mail.ru", 465) as session:
         session.login(settings.MAIL, settings.MAIL_PASSWORD)
@@ -88,5 +90,3 @@ def send_mail(recipient: str, name, date, living_from, coming_to):
 
         session.send_message(msg)
         session.quit()
-            
-

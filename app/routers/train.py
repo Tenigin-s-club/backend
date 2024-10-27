@@ -43,12 +43,11 @@ async def get_info_wagon(
 
 @router.get("/wagons")
 async def get_all_wagons(
-    train_id: int,
-    authorization: Annotated[HTTPAuthorizationCredentials, Depends(security)]
+    train_id: int
 ):
     wagons_link = "/api/info/wagons"
     wagons_data = await client.get(settings.API_ADDRESS + wagons_link + f"?trainId={train_id}", 
-                                   headers=Headers({"Authorization": f"Bearer {authorization.credentials}"}))
+                                   headers=Headers({"Authorization": f"Bearer {settings.TEAM_TOKEN}"}))
     
     main_storage = []
     for wagon in wagons_data.json():
