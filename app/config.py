@@ -21,10 +21,15 @@ class Settings(BaseSettings):
     FRONTEND_PORT: int
     API_ADDRESS: str
     TEAM: str
+    TEAM_TOKEN: str
     
     # Notification settings
     MAIL: str
     MAIL_PASSWORD: str
+
+    # JWT settings
+    SECRET_KEY: str
+    ENCODE_ALGORITHM: str
     
     @property
     def POSTGRES_URL(self):

@@ -1,8 +1,11 @@
 from fastapi import APIRouter, Depends, Query, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials
+from sqlalchemy import insert
 
 from app.config import DATETIME_FORMAT, redis_connection_pool
-from app.utils import security
+from app.db.configuration import get_session
+from app.db.models import Wait
+from app.utils import security, get_user_id_from_token
 from app.schemas.search import STrainInfo
 from datetime import date, datetime
 from typing import Annotated, Literal
@@ -34,6 +37,7 @@ async def search(
         end_point: str,
         # дата в формате 2024-10-25
         departure_date: date,
+        passenger_count: int,
         wagon_type: list[Literal['PLATZCART', 'COUPE']] = Query(),
         fullness_type: list[Literal['LOW', 'MEDIUM', 'HIGH']] = Query(),
         # время поездки в минутах
@@ -49,19 +53,17 @@ async def search(
     redis.lpush(
         'searchs',
         dumps({
+            'type': 'base',
             'start_point': start_point,
             'end_point': end_point,
-            'token': authorization.credentials,
             'search_id': search_id
         })
     )
     # отрегулировать timeout
-    sub.get_message(timeout=60.0)
+    sub.get_message()
     message = sub.get_message(ignore_subscribe_messages=True, timeout=60.0)
-    # ЮВИКОРН ЗАВИСАЕТ
     if not message:
         raise HTTPException(status_code=500, detail='external API don\'t answer to requests ;(')
-    sub.close()
     response = redis.get(search_id)
     redis.delete(search_id)
 
@@ -80,6 +82,24 @@ async def search(
         # подходит ли под пользовательские рамки времени поездки
         if ((min_travel_time and train_travel_time < min_travel_time)
                 or (max_travel_time and train_travel_time > max_travel_time)): continue
+        # достаточно ли мест в вагоне
+        if passenger_count > train_available_seats_count: continue
+
+        redis.lpush(
+            'searchs',
+            dumps({
+                'type': 'wagons',
+                'train_id': train['train_id'],
+                'search_id': search_id
+            })
+        )
+        sub.get_message()
+        message = sub.get_message(ignore_subscribe_messages=True, timeout=60.0)
+        if not message:
+            raise HTTPException(status_code=500, detail='external API don\'t answer to requests ;(')
+        response = redis.get(search_id)
+        redis.delete(search_id)
+        wagons = loads(response)
 
         suitable_wagons = []
         for wagon in train['wagons_info']:
@@ -106,6 +126,20 @@ async def search(
             suitable_wagons=suitable_wagons
         ))
     return suitable_trains
+
+
+@router.post('/autobooking')
+async def create_autobooking(
+        authorization: Annotated[HTTPAuthorizationCredentials, Depends(security)],
+        train_id: int, session = Depends(get_session)
+):
+    user_id = get_user_id_from_token(authorization.credentials)
+    query = insert(Wait).values(
+        user_id=user_id,
+        train_id=train_id
+    )
+    await session.execute(query)
+    await session.commit()
 
 
 @router.get('/cities')
